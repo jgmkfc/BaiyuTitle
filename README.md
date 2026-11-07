@@ -1,9 +1,9 @@
 # BaiyuTitle
 
+[![Build](https://github.com/jgmkfc/BaiyuTitle/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/jgmkfc/BaiyuTitle/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/java-21-orange.svg)](https://adoptium.net/)
 [![Paper](https://img.shields.io/badge/paper-1.21.11-4ea6ea.svg)](https://papermc.io/)
-[![Tests](https://img.shields.io/badge/tests-486%20passing-brightgreen.svg)](#测试)
 
 **Minecraft Paper 服务器的称号插件。** 多称号同时展示、五种购买条件自由组合、玩家间交易、
 称号组与羁绊自动授予、兑换码，以及带 19 项编辑器的管理端。
