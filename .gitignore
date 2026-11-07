@@ -1,0 +1,43 @@
+# 构建产物
+build/
+out/
+bin/
+*.class
+
+# Gradle
+.gradle/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code
+.vscode/
+.settings/
+
+# 服务端运行目录与日志
+run/
+logs/
+*.log
+
+# 本地数据库（SQLite / H2）
+*.db
+*.db-journal
+*.mv.db
+*.trace.db
+
+# 本地文档与工具缓存
+docs/
+.claude/
+.workbuddy/
+untitled-project/
+.git-old/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
