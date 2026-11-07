@@ -26,6 +26,13 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
 
+      # wrapper 里配的是国内镜像，GitHub 的机器访问不到，临时换成官方源
+      - name: Point Gradle wrapper to official distribution
+        run: |
+          sed -i 's|mirrors.tuna.tsinghua.edu.cn/gradle-distributions|services.gradle.org/distributions|' \
+            gradle/wrapper/gradle-wrapper.properties
+          grep distributionUrl gradle/wrapper/gradle-wrapper.properties
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
