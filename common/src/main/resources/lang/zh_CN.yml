@@ -1,0 +1,906 @@
+prefix: '<white>[<gradient:#d9afd9:#97d9e1>BaiyuTitle</gradient><white>]<reset> '
+command:
+  help:
+    lines:
+    - <gold>―――――― BaiyuTitle 称号插件 帮助 ――――――
+    - <yellow>/byt <gray>- 打开装扮管理菜单
+    - <yellow>/byt open|repo <gray>- 打开称号仓库
+    - <yellow>/byt menu <gray>- 打开装扮管理菜单
+    - <yellow>/byt shop <gray>- 打开称号商店
+    - <yellow>/byt help <gray>- 显示本帮助
+    - <yellow>/byt coin bal [玩家] <gray>- 查询称号币余额
+    - <yellow>/byt coin give|set|take <玩家> <数量> <gray>- 管理称号币
+    - <yellow>/byt title create|delete|list <gray>- 管理称号目录
+    - <yellow>/byt player give|remove|set <gray>- 玩家称号管理
+    - <yellow>/byt group create|delete|add|remove|list|info <gray>- 玩家组管理
+    - <yellow>/byt admin <gray>- 打开称号管理菜单
+    - <yellow>/byt admin order resolve <订单> grant|refund <gray>- 裁决留置订单
+    - <yellow>/byt reload <gray>- 重载配置与语言
+    - <yellow>/byt trade <gray>- 打开报价列表
+    - <yellow>/byt trade history <gray>- 查看个人交易记录
+    - <yellow>/byt trade admin [cancel <编号>] <gray>- 全服交易记录/强制销毁报价
+    - <yellow>/byt redeem|code <gray>- 铁砧输入兑换码
+    - <yellow>/byt redeem create|card|disable <gray>- 兑换码与称号卡管理
+  reload:
+    success: <green>重载完成：配置与语言已刷新，称号目录已重建（共 <count> 条）。
+    failed: <red>重载失败：<reason>，详见控制台日志。
+    database-changed: <yellow>检测到 database.yml 有改动：数据库配置需重启服务器才会生效。
+  coin:
+    balance-self: <green>你的称号币余额：<gold><balance></gold>。
+    balance-other: <green>玩家 <yellow><player></yellow> 的称号币余额：<gold><balance></gold>。
+    give-success: <green>已给予 <yellow><player></yellow> <gold><amount></gold> 称号币，现余额 <gold><balance></gold>。
+    set-success: <green>已将 <yellow><player></yellow> 的称号币设为 <gold><balance></gold>。
+    take-success: <green>已扣除 <yellow><player></yellow> <gold><amount></gold> 称号币，现余额 <gold><balance></gold>。
+    take-failed: <red>扣除失败：<yellow><player></yellow> 的余额不足（当前 <gold><balance></gold>）。
+  title:
+    create-success: <green>称号已创建：ID <gold><id></gold>，名称 <name><reset>。
+    create-failed: <red>创建失败:<reason>。
+    delete-success: <green>称号 <gold><id></gold>（<name><reset>）已删除，历史记录保留。
+    delete-failed: <red>删除失败:<reason>。
+    list-header: <gold>称号列表（共 <count> 条）：
+    list-entry: <gray>#<id> <reset><name>
+    list-empty: <yellow>当前没有任何称号，用 <gold>/byt title create <名称></gold> 创建第一个。
+  player:
+    give-success: <green>已授予 <yellow><player></yellow> 称号 <name><reset>。
+    give-already-owned: <yellow><player> 已持有称号 <name><reset>。
+    title-not-found: <red>称号 <gold><id></gold> 不存在或已删除。
+    remove-success: <green>已收回 <yellow><player></yellow> 的称号 <name><reset>。
+    remove-not-owned: <yellow><player> 并未持有称号 <name><reset>。
+    set-success: <green>已将 <yellow><player></yellow> 的 <gold><slot></gold> 号栏位设为 <name><reset>。
+    set-out-of-range: <red>栏位 <gold><slot></gold> 超出 <yellow><player></yellow> 的可用范围。
+    set-not-owned: <red>设置失败：<yellow><player></yellow> 未持有称号 <name><reset>（或称号已删除）。
+  admin:
+    resolve:
+      fulfilled: <green>订单 <gold><order></gold> 已裁决为履约授予。
+      refunded: <green>订单 <gold><order></gold> 已裁决为退款补偿。
+      manual: <yellow>订单 <gold><order></gold> 仍留置人工（<reason>）。
+      already: <yellow>订单 <gold><order></gold> 已被处理，当前状态 <gold><state></gold>。
+      unknown: <red>订单 <gold><order></gold> 不存在。
+  group:
+    create-success: <green>组 <gold><group></gold> 已创建：自动建组称号 <name><reset>（ID <gold><id></gold>），权限节点 <gold><node></gold>
+      已注册。
+    create-invalid-name: <red>创建失败：名称 <gold><input></gold> 非法（组名限小写字母/数字/下划线，称号名剥色后不超过 50 字符）。
+    create-duplicate: <red>创建失败：组名 <gold><group></gold> 已存在（含已删除组，组名不复用）。
+    delete-success: <green>组 <gold><group></gold> 已删除：组称号一并删除，共收回 <gold><count></gold> 名持有者（历史记录保留）。
+    not-found: <red>组 <gold><group></gold> 不存在或已删除。
+    add-success: <green>已将 <yellow><player></yellow> 加入组 <gold><group></gold> 并授予组称号。
+    add-already: <yellow><player> 已在组 <gold><group></gold> 中。
+    remove-success: <green>已将 <yellow><player></yellow> 移出组 <gold><group></gold> 并收回组称号（若其仍持有组权限，下次登录对账会重新补授）。
+    remove-not-member: <yellow><player> 不在组 <gold><group></gold> 的成员表中。
+    list-header: <gold>玩家组列表（共 <count> 个）：
+    list-entry: <gray>#<id> <reset><group>
+    list-empty: <yellow>当前没有任何玩家组，用 <gold>/byt group create <组名></gold> 创建第一个。
+    info-header: <gold>组 <group>（ID <id>）：
+    info-title: <gray>组称号：<reset><name>
+    info-title-missing: <gray>组称号：<red>已删除
+    info-members-header: <gray>成员表成员（<count> 人）：
+    info-member-entry: <gray>- <reset><player>
+    info-members-empty: <gray>成员表为空（仅凭权限的有效成员不在此列）。
+  redeem:
+    create-success: <green>兑换码已创建：<gold><code></gold>（称号 <name><reset><green>，总量 <uses>，每人 <per>，有效期 <expiry>）。
+    card-success: <green>称号卡已发放：<name><reset><green>（持有期 <duration>），请查收背包。
+    disable-success: <green>兑换码 <gold><code></gold> 已停用。
+    disable-not-found: <red>兑换码 <gold><code></gold> 不存在。
+    failed: <red>操作失败：<reason>
+    unlimited: 无限
+  error:
+    no-permission: <red>你没有权限执行此操作。
+    player-only: <red>该命令只能由玩家执行。
+    invalid-args: <red>参数错误，用法：<usage>
+    player-not-found: <red>找不到玩家 <yellow><player></yellow>（从未进入过本服务器）。
+    internal: <red>操作失败，详见控制台日志。
+bond:
+  granted: <green>恭喜！你已集齐羁绊称号 <name><reset> 的全部需求，自动获得该称号！
+custom-title:
+  announcement: <gold><player></gold> <yellow>创建了专属自定义称号 <name><reset><yellow>！
+  notice:
+  - <gold>―――――― 自定义称号公告 ――――――
+  - <gray>自定义称号支持三种颜色格式：MiniMessage、&#RRGGBB 渐变与传统 & 色码。
+  - <gray>需要更高级的自定义方案（图标、简介、稀有度等），请联系服务器管理员。
+redeem:
+  success: <green>兑换成功：<name><reset><green> 已放入你的仓库。
+  reject:
+    code-not-found: <red>兑换失败：兑换码不存在。
+    code-disabled: <red>兑换失败：该兑换码已停用。
+    code-outside-validity: <red>兑换失败：不在该兑换码的有效期内。
+    code-exhausted: <red>兑换失败：该兑换码的总用量已耗尽。
+    code-player-limit: <red>兑换失败：你已达到该兑换码的使用次数上限。
+    card-not-found: <red>兑换失败：称号卡不存在或已失效。
+    card-already-redeemed: <red>兑换失败：该称号卡已被使用。
+    title-missing: <red>兑换失败：目标称号不存在或已删除。
+    already-owned: <yellow>你已拥有该称号，无需重复兑换。
+  card:
+    item-name: <gold>称号卡：<name>
+    item-lore:
+    - <aqua> ■ <white>右键使用，兑换称号 <name>
+    - '<aqua> ■ <white>持有期: <yellow><duration>'
+    - '<aqua> ■ <white>发卡人: <yellow><issuer>'
+    duration-default: 按称号默认
+menu:
+  common:
+    load-failed: <red>菜单数据加载失败，请稍后重试或联系管理员。
+    border:
+      name: '<gray> '
+      lore:
+      - <aqua> ■  <white>不要点我w
+    prev:
+      name: <yellow>上一页
+      lore:
+      - <gray>点击翻到上一页
+    next:
+      name: <yellow>下一页
+      lore:
+      - <gray>点击翻到下一页
+    back:
+      name: <yellow>返回上级
+      lore:
+      - <gray>点击返回上一个界面
+    close:
+      name: <red>关闭菜单
+      lore:
+      - <gray>点击关闭当前菜单
+    apply:
+      name: <green>应用
+      lore:
+      - <gray>点击应用当前更改
+    cancel:
+      name: <red>取消
+      lore:
+      - <gray>点击取消并返回
+    reset:
+      name: <yellow>重置
+      lore:
+      - <gray>点击恢复默认选项
+    main-menu:
+      name: <yellow>返回主菜单
+      lore:
+      - <gray>点击返回服务器主菜单
+      not-configured: <yellow>服务器尚未配置主菜单指令（config.yml 的 menu.main-menu-command）。
+    coming-soon: <yellow>该功能将在后续版本开放，敬请期待。
+    result:
+      slot-out-of-range: <red>操作失败：栏位超出可用范围。
+      title-not-owned: <red>操作失败：包含未持有或已失效的称号。
+      cooldown: <red>操作过于频繁，请等待 <yellow><seconds></yellow> 秒后再试。
+  wardrobe:
+    title: 装扮管理
+    slot:
+      name: <yellow>栏位 <slot>
+      lore:
+      - '<aqua> ■ <white>状态: <status>'
+      - '<aqua> ■ <white>当前佩戴: <display>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>左键选择称号
+      - <dark_gray>[<yellow>▲<dark_gray>] <white>右键开关本栏位
+      status:
+        enabled: <green>已启用
+        disabled: <red>已禁用
+    display:
+      random: <yellow>随机(<count>)
+    button:
+      repository:
+        name: <yellow>称号仓库
+        lore:
+        - <gray>点击打开仓库菜单
+      shop:
+        name: <yellow>称号商店
+        lore:
+        - <gray>点击进入商店菜单
+      info:
+        name: <yellow>个人信息
+        lore:
+        - <gray>点击在聊天栏输出详细信息
+      custom:
+        name: <yellow>自定义称号
+        lore:
+        - <gray>点击进入自定义称号流程
+      trade:
+        name: <yellow>报价列表
+        lore:
+        - <gray>点击进入报价列表菜单
+  select:
+    title: 称号选择 - 栏位 <slot>
+    random:
+      name: <yellow>随机佩戴
+      lore:
+      - <gray>从候选池中随机展示一个称号
+      - ' '
+      - '<aqua> ■ <white>模式: <status>'
+      - '<aqua> ■ <white>候选池: <yellow><count> <white>个'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>点击切换随机模式
+      status:
+        'on': <green>已开启
+        'off': <gray>已关闭
+    apply:
+      name: <green>应用并返回
+      lore:
+      - <gray>点击应用当前选择并返回装扮管理
+      - <gray>直接 ESC 退出则不保存更改
+    apply-success: <green>装扮已应用。
+  repository:
+    title: 称号仓库
+    button:
+      wardrobe:
+        name: <yellow>装扮管理
+        lore:
+        - <gray>点击打开装扮管理菜单
+      filter:
+        name: <yellow>筛选
+        lore:
+        - <gray>点击打开筛选菜单
+      sort:
+        name: <yellow>排序
+        lore:
+        - <gray>点击打开排序菜单
+      custom:
+        name: <yellow>自定义称号
+        lore:
+        - <gray>点击进入自定义称号流程
+      redeem:
+        name: <yellow>兑换码
+        lore:
+        - <gray>点击输入兑换码
+  shop:
+    title: 称号商店
+    button:
+      wardrobe:
+        name: <yellow>装扮管理
+        lore:
+        - <gray>点击打开装扮管理菜单
+      filter:
+        name: <yellow>筛选
+        lore:
+        - <gray>点击打开筛选菜单
+      sort:
+        name: <yellow>排序
+        lore:
+        - <gray>点击打开排序菜单
+      custom:
+        name: <yellow>自定义称号
+        lore:
+        - <gray>点击进入自定义称号流程
+      trade:
+        name: <yellow>报价列表
+        lore:
+        - <gray>点击进入报价列表菜单
+    detail:
+      title: 称号详情
+      missing: <red>该称号已不存在，可能刚被删除。
+      time:
+        name: <yellow>时间信息
+        lore:
+        - '<aqua> ■ <white>创建时间: <yellow><created>'
+        - '<aqua> ■ <white>获取窗口: <yellow><window>'
+        - '<aqua> ■ <white>持有期限: <yellow><duration>'
+      stats:
+        name: <yellow>统计信息
+        lore:
+        - <gray>点击查看购买者列表
+      hidden:
+        name: <yellow>#<id>
+        lore:
+        - '<aqua> ■ <white>内部 ID: <yellow><id>'
+        - '<aqua> ■ <white>种类: <yellow><category>'
+        - '<aqua> ■ <white>所属组: <yellow><group>'
+        - '<aqua> ■ <white>权限节点: <yellow><node>'
+        - '<aqua> ■ <white>创建者: <yellow><creator>'
+        - '<aqua> ■ <white>可交易: <yellow><tradable>'
+        - '<aqua> ■ <white>已售: <yellow><sold>'
+      value:
+        none: 无
+        console: 控制台
+        'yes': 是
+        'no': 否
+        window-range: <start>~<end>
+      category:
+        normal: 普通
+        bond: 羁绊
+        group: 组称号
+        custom: 自定义
+    filter:
+      title: 商店筛选
+      lore:
+      - '<aqua> ■ <white>当前: <yellow><value>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>点击循环切换选项
+      acquire:
+        name: <yellow>获取方式
+      own:
+        name: <yellow>购买状态
+      rarity:
+        name: <yellow>稀有度
+      activity:
+        name: <yellow>活动状态
+      option:
+        all: 全部
+        owned: 已拥有
+        not-owned: 未拥有
+        can-buy: 能购买
+        cannot-buy: 不能购买
+        window-active: 限时活动中
+        window-ended: 已结束
+        total-open: 总数未满
+        sold-out: 已售罄
+    sort:
+      title: 商店排序
+      lore:
+      - '<aqua> ■ <white>当前: <yellow><value>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>点击选中或翻转方向
+      time:
+        name: <yellow>时间排序
+      price:
+        name: <yellow>价格排序
+      popularity:
+        name: <yellow>购买热度
+      rarity:
+        name: <yellow>稀有度排序
+      option:
+        newest: 新→老
+        oldest: 老→新
+        asc: 低→高
+        desc: 高→低
+    confirm:
+      info:
+        name: <yellow>确认购买 <title><yellow>？
+        intro:
+        - <gray>你正在购买称号 <title><gray>，
+        - <gray>本次购买将支付：
+        - ' '
+      cost:
+        free: <aqua> ■ <white>免费（无需支付任何费用）
+        vault: '<aqua> ■ <white>金币: <yellow><amount>'
+        coin: '<aqua> ■ <white>称号币: <yellow><amount>'
+        item: '<aqua> ■ <white>物品: <yellow><item> × <amount>'
+        permission: '<aqua> ■ <white>权限: <yellow><node> <gray>（需持有，不扣费）'
+    result:
+      success: <green>购买成功：<title><reset><green> 已放入你的仓库。
+      payment-failed: <red>支付失败，已退款：称号币与库存占位均已返还。
+      manual: <yellow>订单（编号 <order>）出现异常，已转人工处理，请联系管理员。
+      already-resolved: <yellow>该订单已处理过，请勿重复操作。
+    payment-select:
+      title: 选择付款方式
+      unavailable: <red>该称号当前无法购买，请稍后重试。
+      option-not-met: <red>该付款方式的条件尚不满足。
+      option:
+        vault:
+          name: <yellow>经济币付款
+        coin:
+          name: <yellow>称号币付款
+        item:
+          name: <yellow>物品付款
+        permission:
+          name: <yellow>权限免单
+        lore:
+        - '<aqua> ■ <white>需支付: <yellow><value>'
+        - ' '
+        - <dark_gray>[<green>✔<dark_gray>] <white>点击选择此付款方式
+        unavailable-lore:
+        - <red>当前条件不满足，无法选择此方式
+      price:
+        vault: <amount> 金币
+        coin: <amount> 称号币
+        item: <item> × <amount>
+        permission: 需持有权限 <node>（免费）
+  confirm:
+    title: 确认操作
+    confirm:
+      name: <green>确认
+      lore:
+      - <gray>点击执行该操作
+    cancel:
+      name: <red>拒绝
+      lore:
+      - <gray>点击取消并返回上一个界面
+  custom:
+    title: 自定义称号
+    anvil-title: 输入称号名称
+    select-first: <red>请先选择一种付款方式。
+    option-unavailable: <red>该付款方式当前不可用。
+    option:
+      vault:
+        name: <yellow>经济币付款
+      coin:
+        name: <yellow>称号币付款
+      item:
+        name: <yellow>物品付款
+      permission:
+        name: <yellow>权限免单
+      lore:
+      - '<aqua> ■ <white>需支付: <yellow><value>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>点击选择此付款方式
+      unavailable-lore:
+      - <red>该付款方式当前不可用
+    price:
+      vault: <amount> 金币
+      coin: <amount> 称号币
+      item: <item> × <amount>
+      permission: 需持有权限 <node>（免费）
+      free: 免费
+    confirm-select:
+      name: <green>确认付款方式
+      lore:
+      - <gray>点击进入铁砧命名（最长 50 字，颜色码可用）
+    notice-button:
+      name: <yellow>自定义称号公告
+      lore:
+      - <gray>点击查看自定义称号公告
+    confirm:
+      info:
+        name: <yellow>确认创建 <name><yellow>？
+        intro:
+        - <gray>你正在创建自定义称号 <name><gray>，
+        - <gray>本次创建将支付：
+        - ' '
+      cost: '<aqua> ■ <white>需支付: <yellow><value>'
+    result:
+      success: <green>自定义称号创建成功：<name><reset><green> 已放入你的仓库。
+  redeem:
+    anvil-title: 输入兑换码
+  player-select:
+    title: 选择玩家
+    entry:
+      name: <yellow><player>
+      lore:
+      - <gray>点击选择该玩家
+    offline: <red>该玩家已离线。
+  admin:
+    title: 称号管理
+    button:
+      player-repo:
+        name: <yellow>管理玩家仓库
+        lore:
+        - <gray>点击选择要管理的玩家
+      shop:
+        name: <yellow>返回商店
+        lore:
+        - <gray>点击返回商店菜单
+      trade-log:
+        name: <yellow>全服交易记录
+        lore:
+        - <gray>点击打开全服交易记录菜单
+    editor:
+      title: '称号编辑 #<id>'
+      missing: <red>该称号已不存在，可能刚被删除。
+      current: '<aqua> ■ <white>当前: <value>'
+      disabled: <gray> ✘ 此项对当前称号不可用
+      unavailable: <red>此项对当前称号不可用。
+      limit-hint: <yellow>当前无限定：请通过「获取窗口」或「总数上限」录入数据，对应限定模式将自动启用。
+      failed: <red>操作失败：参数无效或称号状态已变更，详见控制台日志。
+      item:
+        name:
+          name: <yellow>称号名称
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击在聊天栏输入新名称
+        description:
+          name: <yellow>称号简介
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击在聊天栏输入新简介（| 分行）
+        icon:
+          name: <yellow>称号图标
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击后手持目标物品并左键确认
+        rarity:
+          name: <yellow>稀有度
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击打开稀有度选择菜单
+        visible:
+          name: <yellow>公开状态
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击切换 可见/隐藏
+        buy-types:
+          name: <yellow>购买类型
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击打开购买类型选择菜单
+        logic:
+          name: <yellow>组合逻辑
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击切换 与/或
+        tradable:
+          name: <yellow>可交易
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击切换 可交易/不可交易
+        hold:
+          name: <yellow>有效期
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入天数（0 为不限时）
+        price-vault:
+          name: <yellow>金币价格
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入数值（0 清除该价格）
+        price-coin:
+          name: <yellow>称号币价格
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入数值（0 清除该价格）
+        price-item:
+          name: <yellow>物品价格
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击先输入数量，再手持目标物品左键确认
+        permission:
+          name: <yellow>组及权限节点
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入所需权限节点
+        bond:
+          name: <yellow>羁绊条件
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入所需称号 ID（| 分隔）
+        limit-mode:
+          name: <yellow>限定模式
+          action: <dark_gray>[<green>✔<dark_gray>] <white>点击清除当前限定（录入窗口/上限自动启用）
+        window:
+          name: <yellow>获取窗口
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入起止日期（| 分隔，单日期为截止）
+        total-cap:
+          name: <yellow>总数上限
+          action: <dark_gray>[<green>✎<dark_gray>] <white>点击输入最大流入商店份数
+        stats:
+          name: <yellow>已售统计
+          action: <dark_gray>[<aqua>❐<dark_gray>] <white>点击查看购买玩家列表
+      value:
+        none: 无
+        visible: <green>可见
+        hidden: <red>隐藏
+        'yes': 是
+        'no': 否
+        and: 与（全部满足）
+        or: 或（任一满足）
+        mode-none: 无限制
+        mode-window: 时间窗口
+        mode-total: 总数限量
+        window-range: <start>~<end>
+        item-cost: <item> × <amount>
+        sold: <sold> 份
+        sold-capped: <sold>/<cap> 份
+      prompt:
+        icon: <gray>请将目标物品拿在主手，然后左键点击空气或方块确认：
+        name: <gray>请输入新的称号名称（支持 & 颜色码与 MiniMessage）：
+        description: <gray>请输入新的简介，使用 <yellow>|</yellow> 分行：
+        hold: <gray>请输入持有有效期天数（<yellow>0</yellow> 为不限时）：
+        price-vault: <gray>请输入金币价格（<yellow>0</yellow> 清除该价格条件）：
+        price-coin: <gray>请输入称号币价格（<yellow>0</yellow> 清除该价格条件）：
+        price-item: <gray>请输入该物品所需数量（<yellow>1</yellow> 至 <yellow>2304</yellow>）：
+        price-item-held: <gray>请将作为价格的物品拿在主手，然后左键点击空气或方块确认：
+        permission: <gray>请输入所需权限节点：
+        bond: <gray>请输入羁绊需求的称号数字 ID，多个用 <yellow>|</yellow> 分隔：
+        window: <gray>请输入获取窗口：<yellow>起始日期|截止日期</yellow>，或单个截止日期（起始定为当天）：
+        total-cap: <gray>请输入最大流入商店份数（≥1）：
+    buytype:
+      title: 选择购买类型
+      lore:
+      - '<aqua> ■ <white>状态: <state>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>点击切换启用（应用后生效）
+      state:
+        'on': <green>已启用
+        'off': <gray>未启用
+      option:
+        free: <yellow>免费
+        vault: <yellow>金币
+        coin: <yellow>称号币
+        item: <yellow>物品
+        permission: <yellow>权限
+        bond: <yellow>羁绊
+        group: <yellow>组称号
+      locked: <red>该购买类型由称号种类决定，不可在此切换。
+      empty: <red>至少需要启用一种购买类型。
+      applied: <green>购买类型已更新，被取消类型的价格条件已清除。
+    rarity:
+      title: 选择稀有度
+      none:
+        name: <yellow>无稀有度
+      option:
+        name: <yellow><rarity>
+        lore:
+        - <dark_gray>[<green>✔<dark_gray>] <white>点击暂选，应用后生效
+      applied: <green>稀有度已更新。
+    player-repo:
+      title: 玩家仓库管理 - <player>
+      confirm:
+        name: <yellow>确认收回称号 <title><reset> ？
+        lore:
+        - '<gray>目标玩家: <yellow><player>'
+        - <gray>收回后将同时卸下其全部装扮引用，
+        - <gray>历史记录保留，此操作不可撤销。
+      revoke-success: <green>已收回 <yellow><player></yellow> 的称号 <title><reset>。
+      revoke-missing: <yellow><player> 并未持有该称号（可能已被收回或已到期）。
+    buyer-list:
+      title: '购买者列表 #<id>'
+      entry:
+        name: <yellow><player>
+        lore:
+        - '<aqua> ■ <white>购买时间: <yellow><time>'
+    trade-log:
+      title: 全服交易记录
+      entry:
+        name: <yellow><initiator> → <target>
+        lore:
+        - <gray>状态：<status>
+        - <gray>发起方标的：<white><initiator-count> <gray>个
+        - <gray>目标方标的：<white><target-count> <gray>个
+        - <gray>创建时间：<white><created>
+        - <gray>过期时间：<white><expires>
+        - <yellow>点击查看详情
+      filter:
+        name: <yellow>状态筛选
+        lore:
+        - <gray>当前：<current>
+        - <gray>点击循环切换：全部/等待中/已完成/已销毁/已拒绝
+        option:
+          all: <white>全部
+          pending: <yellow>等待中
+          completed: <green>已完成
+          destroyed: <dark_red>已销毁
+          rejected: <red>已拒绝
+      search:
+        name: <yellow>搜索玩家名
+        lore:
+        - <gray>当前：<white><current>
+        - <gray>点击在聊天栏输入玩家名（模糊搜索）
+        - <gray>输入 <white>*</white> <gray>清除搜索
+        prompt: <yellow>请在聊天栏输入要搜索的玩家名（模糊匹配；输入 * 清除；输入 cancel 取消）：
+        none: （无）
+  trade-list:
+    title: 报价列表
+    entry:
+      name: <yellow>与 <player> 的报价
+      lore:
+      - <direction>
+      - <gray>我方标的：<white><mine> <gray>个
+      - <gray>对方标的：<white><theirs> <gray>个
+      - <gray>创建时间：<white><created>
+      - <gray>过期时间：<white><expires>
+      - <yellow>点击查看详情
+    direction:
+      incoming: <aqua>收到的报价
+      outgoing: <gold>发出的报价
+    button:
+      create:
+        name: <yellow>创建报价
+        lore:
+        - <gray>点击选择交易玩家
+      return:
+        name: <yellow>返回
+        lore:
+        - <gray>点击返回上一级菜单
+      history:
+        name: <yellow>交易记录
+        lore:
+        - <gray>点击打开个人交易记录菜单
+    create-no-permission: <red>你没有发起报价的权限，只能接受他人的报价。
+  trade-select:
+    title: 选择<side>交易称号 - <target>
+    side:
+      self: 己方
+      other: 对方
+    next:
+      name: <yellow>下一步
+      lore:
+        self:
+        - <gray>当前：①选择己方称号
+        - <gray>下一步：②选择对方称号
+        other:
+        - <gray>当前：②选择对方称号
+        - <gray>下一步：③确认报价
+    limit: <red>每侧最多选择 <max> 个称号。
+    empty-offer: <red>双方标的不能同时为空，请至少选择一个称号。
+    draft-missing: <red>报价草稿已失效，请重新创建报价。
+  trade-detail:
+    title: 报价详情
+    missing: <red>该报价不存在或已被清理。
+    head:
+      name: <yellow><player>
+      draft-lore:
+      - <gray>称号总数：<white><total>
+      - <gray>已选称号：<white><selected>
+      - <yellow>点击返回选择菜单修改
+      offer-lore:
+      - <gray>该侧标的：<white><count> <gray>个
+    item:
+      mark-lore:
+      - <gray>点击标记/取消标记（仅浏览用）
+    button:
+      confirm:
+        name: <green>确认发起报价
+        lore:
+        - <gray>点击进入二次确认
+      cancel:
+        name: <red>取消发起报价
+        lore:
+        - <gray>点击取消并返回报价列表
+      accept:
+        name: <green>同意报价
+        lore:
+        - <gray>点击进入二次确认
+      reject:
+        name: <red>拒绝报价
+        lore:
+        - <gray>点击进入二次确认
+    status:
+      name: <yellow>状态：<status>
+      lore:
+      - <gray>创建时间：<white><created>
+      - <gray>过期时间：<white><expires>
+      - <gray>处理人：<white><by>
+      none: —
+    confirm:
+      create:
+        name: <yellow>确认向 <target> 发起报价？
+        lore:
+        - <gray>我方标的：<white><mine> <gray>个
+        - <gray>对方标的：<white><theirs> <gray>个
+        - <red>报价创建后不可修改
+      accept:
+        name: <yellow>确认同意 <player> 的报价？
+        lore:
+        - <red>同意后双方称号立即交换
+        - <gray>装扮中的标的将被卸下
+      reject:
+        name: <yellow>确认拒绝 <player> 的报价？
+        lore:
+        - <gray>拒绝后该报价不再有效
+  trade-history:
+    title: 个人交易记录
+    entry:
+      name: <yellow>与 <player> 的交易
+      lore:
+      - <direction>
+      - <gray>状态：<status>
+      - <gray>我方标的：<white><mine> <gray>个
+      - <gray>对方标的：<white><theirs> <gray>个
+      - <gray>创建时间：<white><created>
+      - <yellow>点击查看详情
+gui-item:
+  section:
+    status: '<aqua> ■ <white>状态:'
+    purchase: '<aqua> ■  <white>购买:'
+    personal: '<aqua> ■ <white>个人状态:'
+    limit: '<aqua> ■  <white>限定:'
+    rarity: '<aqua> ■  <white>稀有度: <gold><rarity>'
+    description: '<aqua> ■  <white>简介:'
+  line:
+    expiry: '  <white> · 到期时间: <yellow><expiry>'
+    equipped: '  <green> ✔ 已装扮'
+    not-equipped: '  <gray> × 未装扮'
+    description: '  <white>  <line>'
+    type: '  <white> · 类型: <types>'
+    price-vault: '  <white> · 金币: <yellow><amount>'
+    price-coin: '  <white> · 称号币: <yellow><amount>'
+    price-item: '  <white> · 价格: <yellow><item> × <amount>'
+    price-permission: '  <white> · 权限: <yellow><node>'
+    hold-duration: '  <white> · 限时: <yellow><duration>'
+    group: '  <white> · 所属组: <aqua><group>'
+    bond-requires: '  <white> · 需要称号: <white><titles>'
+    window: '  <white> · 期限: <yellow><start>~<end>'
+    total-cap: '  <white> · 总数: <yellow><cap>'
+    owned: '  <green> ✔ 已拥有'
+    personal-vault-met: '  <white> · 金币: <green><balance>'
+    personal-vault-unmet: '  <white> · 金币: <gray><balance>'
+    personal-coin-met: '  <white> · 称号币: <green><balance>'
+    personal-coin-unmet: '  <white> · 称号币: <gray><balance>'
+    personal-item-met: '  <white> · 背包: <green><item> × <count>'
+    personal-item-unmet: '  <white> · 背包: <gray><item> × <count>'
+    personal-permission-met: '  <white> · 权限: <green>有'
+    personal-permission-unmet: '  <white> · 权限: <gray>无'
+    personal-bond-met: '  <white> · <title>: <green>拥有'
+    personal-bond-unmet: '  <white> · <title>: <gray>暂无'
+    personal-economy-unavailable: '  <gray> × 经济系统不可用'
+  action:
+    equip: <dark_gray>[<green>✔<dark_gray>] <white>点击装扮
+    unequip: <dark_gray>[<red>x<dark_gray>] <gray>点击卸下
+    buy: <dark_gray>[<green>✔<dark_gray>] <white>点击购买
+    cannot-buy: <dark_gray>[<red>×<dark_gray>] <gray>无法购买
+    goto-repository: <dark_gray>[<green>-><dark_gray>] <white>跳转仓库
+  admin:
+    section:
+      basic: '<gray>■ <white>基本信息:'
+    line:
+      id: '  <white> · ID: <yellow><id>'
+      visible: '  <white> · 公开状态: <green>✔ 可见'
+      hidden: '  <white> · 公开状态: <red>× 隐藏'
+      type: '  <white> · 购买类型: <types>'
+    action:
+      edit: <dark_gray>[<gold>✎<dark_gray>] <white>编辑
+shop:
+  type:
+    free: 免费
+    vault: 金币
+    coin: 称号币
+    item: 物品
+    permission: 权限
+    group: 组称号
+    bond: 羁绊
+    joiner-and: <white>与
+    joiner-or: <white>或
+  reject:
+    title-not-found: <red>购买失败：称号不存在或已删除。
+    not-purchasable: <red>购买失败：该称号不支持商店购买。
+    hidden: <red>购买失败：该称号当前不可见。
+    outside-window: <red>购买失败：不在限时获取窗口内。
+    sold-out: <red>购买失败：该称号已售罄。
+    already-owned: <yellow>你已拥有该称号，请前往仓库查看。
+    pending-order-exists: <yellow>你有一笔该称号的订单正在处理中，请稍候。
+    insufficient-coins: <red>购买失败：称号币余额不足。
+    economy-unavailable: <red>购买失败：经济系统不可用，请联系管理员。
+    invalid-branch: <red>购买失败：所选购买方式无效，请重新选择。
+    conditions-unmet: <red>购买失败：未满足购买条件。
+    name-invalid: <red>创建失败：称号名称去色后不能为空且不能超过 50 个字符。
+input:
+  hint: <gray>请在聊天栏输入内容，输入 <yellow>cancel</yellow> 或 <yellow>stop</yellow> 取消；<yellow><seconds></yellow> 秒内无输入将自动取消。
+  cancelled: <yellow>本次输入已取消。
+  timeout: <yellow>输入超时，本次操作已自动取消。
+  held-item:
+    hint: <gray>输入 <yellow>cancel</yellow> 或 <yellow>stop</yellow> 可取消；<yellow><seconds></yellow> 秒内未确认将自动取消。
+    empty: <red>主手为空，请手持目标物品后再次左键确认。
+  anvil:
+    item-name: <white>请输入内容后点击右侧结果槽
+  error:
+    empty: <red>输入不能为空，请重新输入。
+    length: <red>长度须在 <min> 至 <max> 个字符之间（当前 <actual> 个），请重新输入。
+    not-a-number: <red>请输入一个整数。
+    out-of-range: <red>数值须在 <min> 至 <max> 之间，请重新输入。
+    amount-invalid: <red>金额格式无效：请输入最多两位小数的非负数字。
+    date-format: <red>日期格式无效：请输入 <yellow>年-月-日</yellow> 或 <yellow>起始日期|截止日期</yellow>，例如 <yellow>2026-09-29|2026-10-31</yellow>。
+    date-order: <red>日期区间无效：截止日期不能早于起始日期。
+    id-list-invalid: <red>称号 ID 列表格式无效：请输入以 <yellow>|</yellow> 分隔的正整数 ID，例如 <yellow>1|2|3</yellow>。
+    id-list-duplicate: <red>称号 ID 列表存在重复项：<yellow><id></yellow>。
+format:
+  permanent: 永久
+  date: <year>年<month>月<day>号
+  date-time: <year>年<month>月<day>日 <hour>:<minute>
+  window-date: <year>年<month>月<day>日
+  duration-years: <years>年
+  duration-days: <days>天
+  list-joiner: 、
+chat:
+  rarity-hover:
+  - <gray>稀有度
+  - <gold><rarity>
+  personal-info:
+  - ——————————————————————————————
+  - '<yellow><bold>您的个人信息如下:'
+  - <gold>├<yellow><bold>称号币:</bold></yellow><green>%byt_player_coin%
+  - <gold>├<yellow><bold>称号总数:</bold></yellow><green>%byt_player_title_amount%
+  - '<gold>├<yellow><bold>免费称号数: <green>%byt_player_title_amount_free%'
+  - '<gold>├<yellow><bold>金币称号数: <green>%byt_player_title_amount_vault%'
+  - '<gold>├<yellow><bold>称号币称号数: <green>%byt_player_title_amount_coin%'
+  - '<gold>├<yellow><bold>物品称号数: <green>%byt_player_title_amount_item%'
+  - '<gold>├<yellow><bold>权限称号数: <green>%byt_player_title_amount_permission%'
+  - '<gold>├<yellow><bold>组称号称号数: <green>%byt_player_title_amount_group%'
+  - '<gold>├<yellow><bold>羁绊称号数: <green>%byt_player_title_amount_bond%'
+  - <gold>├<yellow><bold>栏位总数:</bold></yellow><green>%byt_player_title_slots%
+  - <gold>├<yellow><bold>已启用栏位数:</bold></yellow><green>%byt_player_title_slots_enabled%
+  - <gold>├<yellow><bold>栏位~:</bold></yellow><white>%byt_player_title_using_~%
+  - <gold>├<yellow><bold>发起交易总数:</bold></yellow><white>%byt_player_trade_initiated%
+  - <gold>├<yellow><bold>完成交易总数:</bold></yellow><white>%byt_player_trade_completed%
+  - <gold>└<yellow><bold>当前称号佩戴效果预览:</bold></yellow><white>%byt_player_title_using%
+  - ——————————————————————————————
+papi:
+  random: <yellow>随机(<count>)
+  slot-disabled: <gray>已禁用
+trade:
+  disabled: <red>玩家间称号交易当前已关闭。
+  reject:
+    self-trade: <red>不能与自己交易。
+    empty-offer: <red>双方标的不能同时为空。
+    too-many-items: <red>每侧最多选择 12 个称号。
+    duplicate-item: <red>报价中存在重复标的。
+    title-not-found: <red>标的称号不存在或已删除。
+    not-tradable: <red>报价中存在不可交易的称号。
+    item-not-owned: <red>报价中存在对应玩家未持有的标的。
+    item-expired: <red>报价中存在已到期的标的。
+    recipient-already-owns: <red>接收方已持有转入的称号，无法重复持有。
+  create:
+    success: <green>报价已发送给 <yellow><player></yellow>，等待对方处理。
+  accept:
+    success: <green>已同意 <yellow><player></yellow> 的报价，双方称号已交换。
+    invalidated: <red>成交复核失败，该报价已作废（双方称号未变动）。
+    expired: <yellow>该报价已过期，无法同意。
+    already-resolved: <yellow>该报价已被处理。
+    unknown: <red>该报价不存在。
+    not-target: <red>只有报价目标方可以同意该报价。
+  resolve:
+    rejected: <green>已拒绝该报价。
+    already-resolved: <yellow>该报价已被处理。
+    unknown: <red>该报价不存在。
+    not-participant: <red>你不是该报价的相关方。
+  admin-cancel:
+    success: <green>报价 <gold><id></gold> 已强制销毁。
+    already: <yellow>报价 <gold><id></gold> 已被处理，当前状态 <gold><state></gold>。
+    unknown: <red>报价 <gold><id></gold> 不存在。
+  notify:
+    received: <yellow><player></yellow> <green>向你发起了称号交易报价，点击此消息查看。
+    hover: <gray>点击打开报价列表
+    accepted: <green>你的报价已被 <yellow><player></yellow> 接受，双方称号已交换。
+  status:
+    pending: <yellow>等待中
+    completed: <green>已完成
+    rejected: <red>已拒绝
+    destroyed: <dark_red>已销毁
+    expired: <red>已拒绝（过期）

@@ -1,0 +1,912 @@
+prefix: '<white>[<gradient:#d9afd9:#97d9e1>BaiyuTitle</gradient><white>]<reset> '
+command:
+  help:
+    lines:
+    - <gold>―――――― BaiyuTitle Help ――――――
+    - <yellow>/byt <gray>- Open the wardrobe menu
+    - <yellow>/byt open|repo <gray>- Open the title repository
+    - <yellow>/byt menu <gray>- Open the wardrobe menu
+    - <yellow>/byt shop <gray>- Open the title shop
+    - <yellow>/byt help <gray>- Show this help
+    - <yellow>/byt coin bal [player] <gray>- Check coin balance
+    - <yellow>/byt coin give|set|take <player> <amount> <gray>- Manage coins
+    - <yellow>/byt title create|delete|list <gray>- Manage title catalog
+    - <yellow>/byt player give|remove|set <gray>- Manage player titles
+    - <yellow>/byt group create|delete|add|remove|list|info <gray>- Manage player groups
+    - <yellow>/byt admin <gray>- Open the title management menu
+    - <yellow>/byt admin order resolve <order> grant|refund <gray>- Resolve a held order
+    - <yellow>/byt reload <gray>- Reload config and languages
+    - <yellow>/byt trade <gray>- Open the trade offer list
+    - <yellow>/byt trade history <gray>- View your trade history
+    - <yellow>/byt trade admin [cancel <offer>] <gray>- Global trade log / force-destroy an offer
+    - <yellow>/byt redeem|code <gray>- Enter a redeem code via the anvil UI
+    - <yellow>/byt redeem create|card|disable <gray>- Manage redeem codes and title cards
+  reload:
+    success: '<green>Reload complete: config and languages refreshed, title catalog rebuilt (<count> entries).'
+    failed: '<red>Reload failed: <reason>. See console log for details.'
+    database-changed: '<yellow>database.yml has changed: database settings require a server restart to take effect.'
+  coin:
+    balance-self: '<green>Your coin balance: <gold><balance></gold>.'
+    balance-other: '<green>Coin balance of <yellow><player></yellow>: <gold><balance></gold>.'
+    give-success: <green>Gave <gold><amount></gold> coins to <yellow><player></yellow>, new balance <gold><balance></gold>.
+    set-success: <green>Set <yellow><player></yellow>'s coin balance to <gold><balance></gold>.
+    take-success: <green>Took <gold><amount></gold> coins from <yellow><player></yellow>, new balance <gold><balance></gold>.
+    take-failed: '<red>Failed to take coins: <yellow><player></yellow> has insufficient balance (current <gold><balance></gold>).'
+  title:
+    create-success: '<green>Title created: ID <gold><id></gold>, name <name><reset>.'
+    create-failed: '<red>Creation failed: <reason>.'
+    delete-success: <green>Title <gold><id></gold> (<name><reset>) deleted; history is kept.
+    delete-failed: '<red>Deletion failed: <reason>.'
+    list-header: '<gold>Titles (<count> total):'
+    list-entry: <gray>#<id> <reset><name>
+    list-empty: <yellow>No titles yet. Use <gold>/byt title create <name></gold> to create one.
+  player:
+    give-success: <green>Granted title <name><reset> to <yellow><player></yellow>.
+    give-already-owned: <yellow><player> already owns title <name><reset>.
+    title-not-found: <red>Title <gold><id></gold> does not exist or has been deleted.
+    remove-success: <green>Revoked title <name><reset> from <yellow><player></yellow>.
+    remove-not-owned: <yellow><player> does not own title <name><reset>.
+    set-success: <green>Set slot <gold><slot></gold> of <yellow><player></yellow> to <name><reset>.
+    set-out-of-range: <red>Slot <gold><slot></gold> is out of range for <yellow><player></yellow>.
+    set-not-owned: '<red>Failed: <yellow><player></yellow> does not own title <name><reset> (or it has been deleted).'
+  admin:
+    resolve:
+      fulfilled: '<green>Order <gold><order></gold> resolved: title granted.'
+      refunded: '<green>Order <gold><order></gold> resolved: payment refunded.'
+      manual: <yellow>Order <gold><order></gold> is still held for manual review (<reason>).
+      already: <yellow>Order <gold><order></gold> was already handled; current state <gold><state></gold>.
+      unknown: <red>Order <gold><order></gold> does not exist.
+  group:
+    create-success: '<green>Group <gold><group></gold> created: group title <name><reset> (ID <gold><id></gold>) auto-created,
+      permission node <gold><node></gold> registered.'
+    create-invalid-name: '<red>Creation failed: name <gold><input></gold> is invalid (group names allow lowercase letters/digits/underscores;
+      title names must be at most 50 characters after stripping colors).'
+    create-duplicate: '<red>Creation failed: group name <gold><group></gold> already exists (including deleted groups; names
+      are never reused).'
+    delete-success: '<green>Group <gold><group></gold> deleted: its group title was deleted too, revoked from <gold><count></gold>
+      holders (history is kept).'
+    not-found: <red>Group <gold><group></gold> does not exist or has been deleted.
+    add-success: <green>Added <yellow><player></yellow> to group <gold><group></gold> and granted the group title.
+    add-already: <yellow><player> is already in group <gold><group></gold>.
+    remove-success: <green>Removed <yellow><player></yellow> from group <gold><group></gold> and revoked the group title (if
+      they still hold the group permission, the next login reconcile will re-grant it).
+    remove-not-member: <yellow><player> is not in the member table of group <gold><group></gold>.
+    list-header: '<gold>Player groups (<count> total):'
+    list-entry: <gray>#<id> <reset><group>
+    list-empty: <yellow>No player groups yet. Use <gold>/byt group create <name></gold> to create one.
+    info-header: '<gold>Group <group> (ID <id>):'
+    info-title: '<gray>Group title: <reset><name>'
+    info-title-missing: '<gray>Group title: <red>deleted'
+    info-members-header: '<gray>Member-table members (<count>):'
+    info-member-entry: <gray>- <reset><player>
+    info-members-empty: <gray>The member table is empty (permission-only members are not listed here).
+  redeem:
+    create-success: '<green>Redeem code created: <gold><code></gold> (title <name><reset><green>, total uses <uses>, per player
+      <per>, validity <expiry>).'
+    card-success: '<green>Title card issued: <name><reset><green> (hold period <duration>). Check your inventory.'
+    disable-success: <green>Redeem code <gold><code></gold> has been disabled.
+    disable-not-found: <red>Redeem code <gold><code></gold> does not exist.
+    failed: '<red>Operation failed: <reason>'
+    unlimited: Unlimited
+  error:
+    no-permission: <red>You don't have permission to do that.
+    player-only: <red>This command can only be used by a player.
+    invalid-args: '<red>Invalid arguments. Usage: <usage>'
+    player-not-found: <red>Player <yellow><player></yellow> not found (never joined this server).
+    internal: <red>Operation failed. See console log for details.
+bond:
+  granted: <green>Congratulations! You collected every title required by the bond title <name><reset> and received it automatically!
+custom-title:
+  announcement: <gold><player></gold> <yellow>created their exclusive custom title <name><reset><yellow>!
+  notice:
+  - <gold>―――――― Custom Title Notice ――――――
+  - '<gray>Custom titles support three color formats: MiniMessage, &#RRGGBB gradients and legacy & codes.'
+  - <gray>For advanced customization (icon, description, rarity, ...), please contact a server admin.
+redeem:
+  success: '<green>Redeemed: <name><reset><green> has been added to your repository.'
+  reject:
+    code-not-found: '<red>Redeem failed: the code does not exist.'
+    code-disabled: '<red>Redeem failed: this code has been disabled.'
+    code-outside-validity: '<red>Redeem failed: outside this code''s validity window.'
+    code-exhausted: '<red>Redeem failed: this code has no uses left.'
+    code-player-limit: '<red>Redeem failed: you reached the per-player use limit of this code.'
+    card-not-found: '<red>Redeem failed: the title card does not exist or is invalid.'
+    card-already-redeemed: '<red>Redeem failed: this title card has already been used.'
+    title-missing: '<red>Redeem failed: the target title does not exist or has been deleted.'
+    already-owned: <yellow>You already own this title; no need to redeem it again.
+  card:
+    item-name: '<gold>Title Card: <name>'
+    item-lore:
+    - <aqua> ■ <white>Right-click to redeem title <name>
+    - '<aqua> ■ <white>Hold period: <yellow><duration>'
+    - '<aqua> ■ <white>Issued by: <yellow><issuer>'
+    duration-default: Title default
+menu:
+  common:
+    load-failed: <red>Failed to load menu data. Please try again later or contact an admin.
+    border:
+      name: '<gray> '
+      lore:
+      - <aqua> ■  <white>Nothing to click here~
+    prev:
+      name: <yellow>Previous Page
+      lore:
+      - <gray>Click to go to the previous page
+    next:
+      name: <yellow>Next Page
+      lore:
+      - <gray>Click to go to the next page
+    back:
+      name: <yellow>Back
+      lore:
+      - <gray>Click to return to the previous menu
+    close:
+      name: <red>Close
+      lore:
+      - <gray>Click to close this menu
+    apply:
+      name: <green>Apply
+      lore:
+      - <gray>Click to apply your changes
+    cancel:
+      name: <red>Cancel
+      lore:
+      - <gray>Click to cancel and go back
+    reset:
+      name: <yellow>Reset
+      lore:
+      - <gray>Click to restore default options
+    main-menu:
+      name: <yellow>Main Menu
+      lore:
+      - <gray>Click to return to the server main menu
+      not-configured: <yellow>No main menu command is configured (menu.main-menu-command in config.yml).
+    coming-soon: <yellow>This feature is coming in a future update. Stay tuned!
+    result:
+      slot-out-of-range: '<red>Operation failed: slot is out of range.'
+      title-not-owned: '<red>Operation failed: it contains a title you do not own or that has expired.'
+      cooldown: '<red>Too fast. Please wait <yellow><seconds></yellow> seconds and try again.'
+  wardrobe:
+    title: Wardrobe
+    slot:
+      name: <yellow>Slot <slot>
+      lore:
+      - '<aqua> ■ <white>State: <status>'
+      - '<aqua> ■ <white>Wearing: <display>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>Left-click to pick a title
+      - <dark_gray>[<yellow>▲<dark_gray>] <white>Right-click to toggle this slot
+      status:
+        enabled: <green>Enabled
+        disabled: <red>Disabled
+    display:
+      random: <yellow>Random (<count>)
+    button:
+      repository:
+        name: <yellow>Title Repository
+        lore:
+        - <gray>Click to open the repository menu
+      shop:
+        name: <yellow>Title Shop
+        lore:
+        - <gray>Click to open the shop menu
+      info:
+        name: <yellow>Personal Info
+        lore:
+        - <gray>Click to print your details in chat
+      custom:
+        name: <yellow>Custom Title
+        lore:
+        - <gray>Click to start creating a custom title
+      trade:
+        name: <yellow>Trade Offers
+        lore:
+        - <gray>Click to open the trade offer list
+  select:
+    title: Title Select - Slot <slot>
+    random:
+      name: <yellow>Random Wear
+      lore:
+      - <gray>Show a random title from the pool
+      - ' '
+      - '<aqua> ■ <white>Mode: <status>'
+      - '<aqua> ■ <white>Pool: <yellow><count> <white>title(s)'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>Click to toggle random mode
+      status:
+        'on': <green>On
+        'off': <gray>Off
+    apply:
+      name: <green>Apply & Return
+      lore:
+      - <gray>Click to apply your selection and return
+      - <gray>Pressing ESC discards unsaved changes
+    apply-success: <green>Wardrobe changes applied.
+  repository:
+    title: Title Repository
+    button:
+      wardrobe:
+        name: <yellow>Wardrobe
+        lore:
+        - <gray>Click to open the wardrobe menu
+      filter:
+        name: <yellow>Filter
+        lore:
+        - <gray>Click to open the filter menu
+      sort:
+        name: <yellow>Sort
+        lore:
+        - <gray>Click to open the sort menu
+      custom:
+        name: <yellow>Custom Title
+        lore:
+        - <gray>Click to start creating a custom title
+      redeem:
+        name: <yellow>Redeem Code
+        lore:
+        - <gray>Click to enter a redeem code
+  shop:
+    title: Title Shop
+    button:
+      wardrobe:
+        name: <yellow>Wardrobe
+        lore:
+        - <gray>Click to open the wardrobe menu
+      filter:
+        name: <yellow>Filter
+        lore:
+        - <gray>Click to open the filter menu
+      sort:
+        name: <yellow>Sort
+        lore:
+        - <gray>Click to open the sort menu
+      custom:
+        name: <yellow>Custom Title
+        lore:
+        - <gray>Click to start creating a custom title
+      trade:
+        name: <yellow>Trade Offers
+        lore:
+        - <gray>Click to open the trade offer list
+    detail:
+      title: Title Details
+      missing: <red>This title no longer exists. It may have just been deleted.
+      time:
+        name: <yellow>Time Info
+        lore:
+        - '<aqua> ■ <white>Created: <yellow><created>'
+        - '<aqua> ■ <white>Window: <yellow><window>'
+        - '<aqua> ■ <white>Hold duration: <yellow><duration>'
+      stats:
+        name: <yellow>Statistics
+        lore:
+        - <gray>Click to view the buyer list
+      hidden:
+        name: <yellow>#<id>
+        lore:
+        - '<aqua> ■ <white>Internal ID: <yellow><id>'
+        - '<aqua> ■ <white>Category: <yellow><category>'
+        - '<aqua> ■ <white>Group: <yellow><group>'
+        - '<aqua> ■ <white>Permission node: <yellow><node>'
+        - '<aqua> ■ <white>Creator: <yellow><creator>'
+        - '<aqua> ■ <white>Tradable: <yellow><tradable>'
+        - '<aqua> ■ <white>Sold: <yellow><sold>'
+      value:
+        none: None
+        console: Console
+        'yes': 'Yes'
+        'no': 'No'
+        window-range: <start>~<end>
+      category:
+        normal: Normal
+        bond: Bond
+        group: Group
+        custom: Custom
+    filter:
+      title: Shop Filter
+      lore:
+      - '<aqua> ■ <white>Current: <yellow><value>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>Click to cycle options
+      acquire:
+        name: <yellow>Acquisition
+      own:
+        name: <yellow>Purchase State
+      rarity:
+        name: <yellow>Rarity
+      activity:
+        name: <yellow>Event State
+      option:
+        all: All
+        owned: Owned
+        not-owned: Not owned
+        can-buy: Purchasable
+        cannot-buy: Not purchasable
+        window-active: Event active
+        window-ended: Event ended
+        total-open: Stock left
+        sold-out: Sold out
+    sort:
+      title: Shop Sort
+      lore:
+      - '<aqua> ■ <white>Current: <yellow><value>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>Click to select or flip direction
+      time:
+        name: <yellow>By Time
+      price:
+        name: <yellow>By Price
+      popularity:
+        name: <yellow>By Popularity
+      rarity:
+        name: <yellow>By Rarity
+      option:
+        newest: New → Old
+        oldest: Old → New
+        asc: Low → High
+        desc: High → Low
+    confirm:
+      info:
+        name: <yellow>Buy <title><yellow>?
+        intro:
+        - <gray>You are buying the title <title><gray>.
+        - '<gray>This purchase will cost:'
+        - ' '
+      cost:
+        free: <aqua> ■ <white>Free (nothing to pay)
+        vault: '<aqua> ■ <white>Money: <yellow><amount>'
+        coin: '<aqua> ■ <white>Title Coins: <yellow><amount>'
+        item: '<aqua> ■ <white>Item: <yellow><item> × <amount>'
+        permission: '<aqua> ■ <white>Permission: <yellow><node> <gray>(must hold; no charge)'
+    result:
+      success: '<green>Purchase complete: <title><reset><green> has been added to your repository.'
+      payment-failed: '<red>Payment failed and refunded: title coins and reserved stock have been returned.'
+      manual: '<yellow>Order #<order> hit an issue and was parked for manual review. Please contact an admin.'
+      already-resolved: <yellow>This order has already been processed.
+    payment-select:
+      title: Choose Payment Method
+      unavailable: <red>This title is no longer purchasable. Please try again later.
+      option-not-met: <red>This payment option's condition is not currently met.
+      option:
+        vault:
+          name: <yellow>Pay with Money
+        coin:
+          name: <yellow>Pay with Title Coins
+        item:
+          name: <yellow>Pay with Items
+        permission:
+          name: <yellow>Free with Permission
+        lore:
+        - '<aqua> ■ <white>Cost: <yellow><value>'
+        - ' '
+        - <dark_gray>[<green>✔<dark_gray>] <white>Click to use this payment method
+        unavailable-lore:
+        - <red>This condition is not currently met
+      price:
+        vault: <amount> money
+        coin: <amount> title coins
+        item: <item> × <amount>
+        permission: requires permission <node> (free)
+  confirm:
+    title: Confirm
+    confirm:
+      name: <green>Confirm
+      lore:
+      - <gray>Click to carry out this action
+    cancel:
+      name: <red>Decline
+      lore:
+      - <gray>Click to cancel and go back
+  custom:
+    title: Custom Title
+    anvil-title: Enter the title name
+    select-first: <red>Please pick a payment option first.
+    option-unavailable: <red>This payment option is currently unavailable.
+    option:
+      vault:
+        name: <yellow>Pay with Money
+      coin:
+        name: <yellow>Pay with Title Coins
+      item:
+        name: <yellow>Pay with Items
+      permission:
+        name: <yellow>Free with Permission
+      lore:
+      - '<aqua> ■ <white>Cost: <yellow><value>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>Click to pick this payment option
+      unavailable-lore:
+      - <red>This payment option is currently unavailable
+    price:
+      vault: <amount> money
+      coin: <amount> title coins
+      item: <item> × <amount>
+      permission: requires permission <node> (free)
+      free: Free
+    confirm-select:
+      name: <green>Confirm payment option
+      lore:
+      - <gray>Click to name your title in the anvil UI (up to 50 chars, color codes allowed)
+    notice-button:
+      name: <yellow>Custom Title Notice
+      lore:
+      - <gray>Click to view the custom title notice
+    confirm:
+      info:
+        name: <yellow>Create <name><yellow>?
+        intro:
+        - <gray>You are creating the custom title <name><gray>.
+        - '<gray>This will cost:'
+        - ' '
+      cost: '<aqua> ■ <white>Cost: <yellow><value>'
+    result:
+      success: '<green>Custom title created: <name><reset><green> has been added to your repository.'
+  redeem:
+    anvil-title: Enter the redeem code
+  player-select:
+    title: Select a Player
+    entry:
+      name: <yellow><player>
+      lore:
+      - <gray>Click to select this player
+    offline: <red>That player has gone offline.
+  admin:
+    title: Title Management
+    button:
+      player-repo:
+        name: <yellow>Manage Player Repository
+        lore:
+        - <gray>Click to pick a player to manage
+      shop:
+        name: <yellow>Back to Shop
+        lore:
+        - <gray>Click to return to the shop menu
+      trade-log:
+        name: <yellow>Server Trade Log
+        lore:
+        - <gray>Click to open the server-wide trade log
+    editor:
+      title: 'Title Editor #<id>'
+      missing: <red>This title no longer exists; it may have just been deleted.
+      current: '<aqua> ■ <white>Current: <value>'
+      disabled: <gray> ✘ Not available for this title
+      unavailable: <red>This option is not available for this title.
+      limit-hint: '<yellow>No limit set: enter data via Acquire Window or Total Cap; the matching limit mode enables automatically.'
+      failed: '<red>Operation failed: invalid input or the title has changed. See the console log.'
+      item:
+        name:
+          name: <yellow>Title Name
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to type a new name in chat
+        description:
+          name: <yellow>Description
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to type a new description (| for line breaks)
+        icon:
+          name: <yellow>Icon
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click, then hold the target item and left-click to confirm
+        rarity:
+          name: <yellow>Rarity
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click to open the rarity selector
+        visible:
+          name: <yellow>Visibility
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click to toggle visible/hidden
+        buy-types:
+          name: <yellow>Buy Types
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click to open the buy type selector
+        logic:
+          name: <yellow>Combine Logic
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click to toggle AND/OR
+        tradable:
+          name: <yellow>Tradable
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click to toggle tradable/untradable
+        hold:
+          name: <yellow>Hold Duration
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter days (0 = permanent)
+        price-vault:
+          name: <yellow>Money Price
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter an amount (0 clears it)
+        price-coin:
+          name: <yellow>Title Coin Price
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter an amount (0 clears it)
+        price-item:
+          name: <yellow>Item Price
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter the amount, then hold the item and left-click to confirm
+        permission:
+          name: <yellow>Group & Permission Node
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter the required permission node
+        bond:
+          name: <yellow>Bond Requirements
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter required title IDs (| separated)
+        limit-mode:
+          name: <yellow>Limit Mode
+          action: <dark_gray>[<green>✔<dark_gray>] <white>Click to clear the current limit (entering window/cap enables it)
+        window:
+          name: <yellow>Acquire Window
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter dates (| separated; single date = end)
+        total-cap:
+          name: <yellow>Total Cap
+          action: <dark_gray>[<green>✎<dark_gray>] <white>Click to enter the maximum shop stock
+        stats:
+          name: <yellow>Sales Stats
+          action: <dark_gray>[<aqua>❐<dark_gray>] <white>Click to view the buyer list
+      value:
+        none: None
+        visible: <green>Visible
+        hidden: <red>Hidden
+        'yes': 'Yes'
+        'no': 'No'
+        and: AND (all required)
+        or: OR (any one)
+        mode-none: Unlimited
+        mode-window: Time Window
+        mode-total: Total Cap
+        window-range: <start>~<end>
+        item-cost: <item> × <amount>
+        sold: <sold> sold
+        sold-capped: <sold>/<cap> sold
+      prompt:
+        icon: '<gray>Hold the target item in your main hand, then left-click air or a block to confirm:'
+        name: '<gray>Enter the new title name (& codes and MiniMessage supported):'
+        description: '<gray>Enter the new description, use <yellow>|</yellow> for line breaks:'
+        hold: '<gray>Enter the hold duration in days (<yellow>0</yellow> = permanent):'
+        price-vault: '<gray>Enter the money price (<yellow>0</yellow> clears this price condition):'
+        price-coin: '<gray>Enter the title coin price (<yellow>0</yellow> clears this price condition):'
+        price-item: '<gray>Enter the required item amount (<yellow>1</yellow> to <yellow>2304</yellow>):'
+        price-item-held: '<gray>Hold the price item in your main hand, then left-click air or a block to confirm:'
+        permission: '<gray>Enter the required permission node:'
+        bond: '<gray>Enter the required title IDs, separated by <yellow>|</yellow>:'
+        window: '<gray>Enter the acquire window: <yellow>start|end</yellow>, or a single end date (start = today):'
+        total-cap: '<gray>Enter the maximum shop stock (≥1):'
+    buytype:
+      title: Select Buy Types
+      lore:
+      - '<aqua> ■ <white>State: <state>'
+      - ' '
+      - <dark_gray>[<green>✔<dark_gray>] <white>Click to toggle (takes effect on apply)
+      state:
+        'on': <green>Enabled
+        'off': <gray>Disabled
+      option:
+        free: <yellow>Free
+        vault: <yellow>Money
+        coin: <yellow>Title Coins
+        item: <yellow>Item
+        permission: <yellow>Permission
+        bond: <yellow>Bond
+        group: <yellow>Group Title
+      locked: <red>This buy type is determined by the title category and cannot be changed here.
+      empty: <red>At least one buy type must be enabled.
+      applied: <green>Buy types updated; price conditions of removed types were cleared.
+    rarity:
+      title: Select Rarity
+      none:
+        name: <yellow>No Rarity
+      option:
+        name: <yellow><rarity>
+        lore:
+        - <dark_gray>[<green>✔<dark_gray>] <white>Click to select; takes effect on apply
+      applied: <green>Rarity updated.
+    player-repo:
+      title: Player Repository - <player>
+      confirm:
+        name: <yellow>Revoke title <title><reset> ?
+        lore:
+        - '<gray>Target player: <yellow><player>'
+        - <gray>Revoking also unequips it from all wardrobe slots.
+        - <gray>History is kept; this cannot be undone.
+      revoke-success: <green>Revoked title <title><reset> from <yellow><player></yellow>.
+      revoke-missing: <yellow><player> does not own that title (it may have been revoked or expired).
+    buyer-list:
+      title: 'Buyers of Title #<id>'
+      entry:
+        name: <yellow><player>
+        lore:
+        - '<aqua> ■ <white>Purchased at: <yellow><time>'
+    trade-log:
+      title: Global Trade Log
+      entry:
+        name: <yellow><initiator> → <target>
+        lore:
+        - '<gray>Status: <status>'
+        - '<gray>Initiator items: <white><initiator-count>'
+        - '<gray>Target items: <white><target-count>'
+        - '<gray>Created: <white><created>'
+        - '<gray>Expires: <white><expires>'
+        - <yellow>Click to view details
+      filter:
+        name: <yellow>Status Filter
+        lore:
+        - '<gray>Current: <current>'
+        - '<gray>Click to cycle: All / Pending / Completed / Destroyed / Rejected'
+        option:
+          all: <white>All
+          pending: <yellow>Pending
+          completed: <green>Completed
+          destroyed: <dark_red>Destroyed
+          rejected: <red>Rejected
+      search:
+        name: <yellow>Search Player Name
+        lore:
+        - '<gray>Current: <white><current>'
+        - <gray>Click to type a player name in chat (fuzzy match)
+        - <gray>Type <white>*</white> <gray>to clear the search
+        prompt: '<yellow>Type the player name to search for in chat (fuzzy match; * to clear; cancel to abort):'
+        none: (none)
+  trade-list:
+    title: Trade Offers
+    entry:
+      name: <yellow>Offer with <player>
+      lore:
+      - <direction>
+      - '<gray>Your items: <white><mine>'
+      - '<gray>Their items: <white><theirs>'
+      - '<gray>Created: <white><created>'
+      - '<gray>Expires: <white><expires>'
+      - <yellow>Click to view details
+    direction:
+      incoming: <aqua>Incoming offer
+      outgoing: <gold>Outgoing offer
+    button:
+      create:
+        name: <yellow>Create Offer
+        lore:
+        - <gray>Click to choose a trade partner
+      return:
+        name: <yellow>Back
+        lore:
+        - <gray>Click to return to the previous menu
+      history:
+        name: <yellow>Trade History
+        lore:
+        - <gray>Click to open your personal trade history
+    create-no-permission: <red>You lack permission to create offers; you can only accept offers.
+  trade-select:
+    title: Select <side> Titles - <target>
+    side:
+      self: Your
+      other: Their
+    next:
+      name: <yellow>Next Step
+      lore:
+        self:
+        - '<gray>Now: 1) select your titles'
+        - '<gray>Next: 2) select their titles'
+        other:
+        - '<gray>Now: 2) select their titles'
+        - '<gray>Next: 3) confirm the offer'
+    limit: <red>At most <max> titles can be selected per side.
+    empty-offer: <red>Both sides cannot be empty; select at least one title.
+    draft-missing: <red>The offer draft has expired; please start a new offer.
+  trade-detail:
+    title: Offer Details
+    missing: <red>This offer does not exist or has been cleaned up.
+    head:
+      name: <yellow><player>
+      draft-lore:
+      - '<gray>Titles owned: <white><total>'
+      - '<gray>Selected: <white><selected>'
+      - <yellow>Click to go back and adjust the selection
+      offer-lore:
+      - '<gray>Items on this side: <white><count>'
+    item:
+      mark-lore:
+      - <gray>Click to toggle a browse mark (view only)
+    button:
+      confirm:
+        name: <green>Confirm Offer
+        lore:
+        - <gray>Click for a final confirmation
+      cancel:
+        name: <red>Cancel Offer
+        lore:
+        - <gray>Click to cancel and return to the offer list
+      accept:
+        name: <green>Accept Offer
+        lore:
+        - <gray>Click for a final confirmation
+      reject:
+        name: <red>Reject Offer
+        lore:
+        - <gray>Click for a final confirmation
+    status:
+      name: '<yellow>Status: <status>'
+      lore:
+      - '<gray>Created: <white><created>'
+      - '<gray>Expires: <white><expires>'
+      - '<gray>Resolved by: <white><by>'
+      none: —
+    confirm:
+      create:
+        name: <yellow>Send this offer to <target>?
+        lore:
+        - '<gray>Your items: <white><mine>'
+        - '<gray>Their items: <white><theirs>'
+        - <red>Offers cannot be edited once created
+      accept:
+        name: <yellow>Accept the offer from <player>?
+        lore:
+        - <red>Titles are exchanged immediately on acceptance
+        - <gray>Equipped traded titles will be unequipped
+      reject:
+        name: <yellow>Reject the offer from <player>?
+        lore:
+        - <gray>The offer becomes void once rejected
+  trade-history:
+    title: Trade History
+    entry:
+      name: <yellow>Trade with <player>
+      lore:
+      - <direction>
+      - '<gray>Status: <status>'
+      - '<gray>Your items: <white><mine>'
+      - '<gray>Their items: <white><theirs>'
+      - '<gray>Created: <white><created>'
+      - <yellow>Click to view details
+gui-item:
+  section:
+    status: '<aqua> ■ <white>Status:'
+    purchase: '<aqua> ■  <white>Purchase:'
+    personal: '<aqua> ■ <white>Personal Status:'
+    limit: '<aqua> ■  <white>Limited:'
+    rarity: '<aqua> ■  <white>Rarity: <gold><rarity>'
+    description: '<aqua> ■  <white>Description:'
+  line:
+    expiry: '  <white> · Expires: <yellow><expiry>'
+    equipped: '  <green> ✔ Equipped'
+    not-equipped: '  <gray> × Not equipped'
+    description: '  <white>  <line>'
+    type: '  <white> · Type: <types>'
+    price-vault: '  <white> · Money: <yellow><amount>'
+    price-coin: '  <white> · Title Coins: <yellow><amount>'
+    price-item: '  <white> · Price: <yellow><item> × <amount>'
+    price-permission: '  <white> · Permission: <yellow><node>'
+    hold-duration: '  <white> · Duration: <yellow><duration>'
+    group: '  <white> · Group: <aqua><group>'
+    bond-requires: '  <white> · Requires: <white><titles>'
+    window: '  <white> · Available: <yellow><start>~<end>'
+    total-cap: '  <white> · Total: <yellow><cap>'
+    owned: '  <green> ✔ Owned'
+    personal-vault-met: '  <white> · Money: <green><balance>'
+    personal-vault-unmet: '  <white> · Money: <gray><balance>'
+    personal-coin-met: '  <white> · Title Coins: <green><balance>'
+    personal-coin-unmet: '  <white> · Title Coins: <gray><balance>'
+    personal-item-met: '  <white> · Inventory: <green><item> × <count>'
+    personal-item-unmet: '  <white> · Inventory: <gray><item> × <count>'
+    personal-permission-met: '  <white> · Permission: <green>Yes'
+    personal-permission-unmet: '  <white> · Permission: <gray>No'
+    personal-bond-met: '  <white> · <title>: <green>Owned'
+    personal-bond-unmet: '  <white> · <title>: <gray>Missing'
+    personal-economy-unavailable: '  <gray> × Economy system unavailable'
+  action:
+    equip: <dark_gray>[<green>✔<dark_gray>] <white>Click to equip
+    unequip: <dark_gray>[<red>x<dark_gray>] <gray>Click to unequip
+    buy: <dark_gray>[<green>✔<dark_gray>] <white>Click to buy
+    cannot-buy: <dark_gray>[<red>×<dark_gray>] <gray>Cannot buy
+    goto-repository: <dark_gray>[<green>-><dark_gray>] <white>Go to repository
+  admin:
+    section:
+      basic: '<gray>■ <white>Basic Info:'
+    line:
+      id: '  <white> · ID: <yellow><id>'
+      visible: '  <white> · Visibility: <green>✔ Visible'
+      hidden: '  <white> · Visibility: <red>× Hidden'
+      type: '  <white> · Buy Types: <types>'
+    action:
+      edit: <dark_gray>[<gold>✎<dark_gray>] <white>Edit
+shop:
+  type:
+    free: Free
+    vault: Money
+    coin: Title Coins
+    item: Item
+    permission: Permission
+    group: Group Title
+    bond: Bond
+    joiner-and: '<white> & '
+    joiner-or: '<white> or '
+  reject:
+    title-not-found: '<red>Purchase failed: title does not exist or has been deleted.'
+    not-purchasable: '<red>Purchase failed: this title cannot be bought in the shop.'
+    hidden: '<red>Purchase failed: this title is currently hidden.'
+    outside-window: '<red>Purchase failed: outside the limited acquisition window.'
+    sold-out: '<red>Purchase failed: this title is sold out.'
+    already-owned: <yellow>You already own this title. Check your repository.
+    pending-order-exists: <yellow>You already have a pending order for this title. Please wait.
+    insufficient-coins: '<red>Purchase failed: not enough title coins.'
+    economy-unavailable: '<red>Purchase failed: economy system unavailable. Contact an admin.'
+    invalid-branch: '<red>Purchase failed: invalid payment option. Please choose again.'
+    conditions-unmet: '<red>Purchase failed: purchase conditions are not met.'
+    name-invalid: '<red>Creation failed: the title name must not be empty and may be at most 50 characters after color stripping.'
+input:
+  hint: <gray>Type your input in chat. Type <yellow>cancel</yellow> or <yellow>stop</yellow> to abort; the session auto-cancels
+    after <yellow><seconds></yellow> seconds without input.
+  cancelled: <yellow>Input cancelled.
+  timeout: <yellow>Input timed out, the operation has been cancelled.
+  held-item:
+    hint: <gray>Type <yellow>cancel</yellow> or <yellow>stop</yellow> to abort; the session auto-cancels after <yellow><seconds></yellow> seconds.
+    empty: <red>Your main hand is empty. Hold the target item and left-click again.
+  anvil:
+    item-name: <white>Type the text, then click the result slot
+  error:
+    empty: <red>Input cannot be empty. Please try again.
+    length: <red>Length must be between <min> and <max> characters (got <actual>). Please try again.
+    not-a-number: <red>Please enter a whole number.
+    out-of-range: <red>The value must be between <min> and <max>. Please try again.
+    amount-invalid: '<red>Invalid amount: enter a non-negative number with at most two decimals.'
+    date-format: '<red>Invalid date format: use <yellow>y-m-d</yellow> or <yellow>start|end</yellow>, e.g. <yellow>2026-09-29|2026-10-31</yellow>.'
+    date-order: '<red>Invalid date range: the end date cannot be before the start date.'
+    id-list-invalid: '<red>Invalid title ID list: enter positive integer IDs separated by <yellow>|</yellow>, e.g. <yellow>1|2|3</yellow>.'
+    id-list-duplicate: '<red>Duplicate title ID in the list: <yellow><id></yellow>.'
+format:
+  permanent: Permanent
+  date: <year>-<month>-<day>
+  date-time: <year>-<month>-<day> <hour>:<minute>
+  window-date: <year>-<month>-<day>
+  duration-years: <years>y
+  duration-days: <days>d
+  list-joiner: ', '
+chat:
+  rarity-hover:
+  - <gray>Rarity
+  - <gold><rarity>
+  personal-info:
+  - ——————————————————————————————
+  - '<yellow><bold>Your personal info:'
+  - <gold>├<yellow><bold>Title coins:</bold></yellow><green>%byt_player_coin%
+  - <gold>├<yellow><bold>Titles owned:</bold></yellow><green>%byt_player_title_amount%
+  - '<gold>├<white>Free titles: <green>%byt_player_title_amount_free%'
+  - '<gold>├<white>Money titles: <green>%byt_player_title_amount_vault%'
+  - '<gold>├<white>Coin titles: <green>%byt_player_title_amount_coin%'
+  - '<gold>├<white>Item titles: <green>%byt_player_title_amount_item%'
+  - '<gold>├<white>Permission titles: <green>%byt_player_title_amount_permission%'
+  - '<gold>├<white>Group titles: <green>%byt_player_title_amount_group%'
+  - '<gold>├<white>Bond titles: <green>%byt_player_title_amount_bond%'
+  - <gold>├<yellow><bold>Total slots:</bold></yellow><green>%byt_player_title_slots%
+  - <gold>├<yellow><bold>Enabled slots:</bold></yellow><green>%byt_player_title_slots_enabled%
+  - <gold>├<yellow><bold>Slot ~:</bold></yellow><white>%byt_player_title_using_~%
+  - <gold>├<yellow><bold>Trades initiated:</bold></yellow><white>%byt_player_trade_initiated%
+  - <gold>├<yellow><bold>Trades completed:</bold></yellow><white>%byt_player_trade_completed%
+  - <gold>└<yellow><bold>Current title preview:</bold></yellow><white>%byt_player_title_using%
+  - ——————————————————————————————
+papi:
+  random: <yellow>Random(<count>)
+  slot-disabled: <gray>Disabled
+trade:
+  disabled: <red>Player-to-player title trading is currently disabled.
+  reject:
+    self-trade: <red>You cannot trade with yourself.
+    empty-offer: <red>Both sides of the offer cannot be empty.
+    too-many-items: <red>At most 12 titles can be selected per side.
+    duplicate-item: <red>The offer contains a duplicate item.
+    title-not-found: <red>An offered title no longer exists or was deleted.
+    not-tradable: <red>The offer contains a non-tradable title.
+    item-not-owned: <red>The offer contains an item its side no longer owns.
+    item-expired: <red>The offer contains an expired item.
+    recipient-already-owns: <red>The recipient already owns an incoming title.
+  create:
+    success: <green>Offer sent to <yellow><player></yellow>, awaiting their response.
+  accept:
+    success: <green>Accepted the offer from <yellow><player></yellow>; titles have been exchanged.
+    invalidated: <red>Final re-check failed; the offer was voided (no titles changed hands).
+    expired: <yellow>This offer has expired and can no longer be accepted.
+    already-resolved: <yellow>This offer has already been resolved.
+    unknown: <red>This offer does not exist.
+    not-target: <red>Only the offer's target may accept it.
+  resolve:
+    rejected: <green>Offer rejected.
+    already-resolved: <yellow>This offer has already been resolved.
+    unknown: <red>This offer does not exist.
+    not-participant: <red>You are not a participant of this offer.
+  admin-cancel:
+    success: <green>Offer <gold><id></gold> has been force-destroyed.
+    already: <yellow>Offer <gold><id></gold> was already resolved, current state <gold><state></gold>.
+    unknown: <red>Offer <gold><id></gold> does not exist.
+  notify:
+    received: <yellow><player></yellow> <green>sent you a title trade offer. Click this message to view it.
+    hover: <gray>Click to open the offer list
+    accepted: <green>Your offer was accepted by <yellow><player></yellow>; titles have been exchanged.
+  status:
+    pending: <yellow>Pending
+    completed: <green>Completed
+    rejected: <red>Rejected
+    destroyed: <dark_red>Destroyed
+    expired: <red>Rejected (expired)
