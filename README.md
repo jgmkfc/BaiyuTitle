@@ -1,6 +1,5 @@
 # BaiyuTitle
 
-[![Build](https://github.com/jgmkfc/BaiyuTitle/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/jgmkfc/BaiyuTitle/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/java-21-orange.svg)](https://adoptium.net/)
 [![Paper](https://img.shields.io/badge/paper-1.21.11-4ea6ea.svg)](https://papermc.io/)
@@ -86,10 +85,8 @@
 ## 已知限制
 
 - **不支持 Folia。** 区域化调度需要重写整个表现层，收益不抵成本。
-- **Tab 列表在装了 TAB 类插件时不生效。** TAB 用数据包直接改写 Tab 显示名，优先级高于插件的
-  `playerListName`，`title.is-tab` 会被它覆盖。正确做法是关掉 `is-tab`，改用 TAB 自己的配置
-  引用本插件变量：放名字前用 `tabprefix: '%byt_player_title_using%'`，放名字后用
-  `tabsuffix: ' %byt_player_title_using%'`。
+- **Tab 列表在装了 TAB 类插件时可能不生效。** 这类插件通常会用数据包直接改写 Tab 显示名，优先级高于插件的
+  `playerListName`，`title.is-tab` 。
 - **不显示头顶称号。** 头顶只能用记分板队伍前缀实现，会与前缀 / TAB 类插件争抢队伍归属。
 - **菜单布局写死在代码里。** 不支持 yml 自定义布局；文案可以改（语言文件），布局不行。
 - **业务设计文档与开发记录不随仓库发布。** 仓库只放代码。
