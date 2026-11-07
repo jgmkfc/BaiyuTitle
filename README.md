@@ -34,25 +34,20 @@
 
 ## 关于开发方式
 
-这个项目的代码由 AI 编程助手完成。写在前面是因为从注释风格和测试密度都能看出来，藏着没有意义。
-
-需要说明的是它不是什么：**不是「描述需求 → 拿到代码」的一次性产物**。实际过程是先写 954 行的业务设计文档
-定清边界，再定架构约束（单类 250 行上限、禁止静态单例、领域层不依赖服务端 API），然后分十个阶段推进，
-每阶段跑完整构建并做一次评审。
-
-AI 承担的是「按约束把设计翻译成代码」。技术选型、边界判断与验收标准由人定——质量下限来自约束，不来自模型。
+由 vibe coding 完成。
 
 ## 开始使用
 
 ### 安装
 
 1. 把 `BaiYuTitle-paper-*.jar` 放入 `plugins/` 目录
-2. 需要经济功能时安装 [Vault](https://github.com/MilkBowl/Vault) 与一个经济插件
+2. 需要经济功能时安装 Vault 与一个经济插件
 3. 启动服务器，插件会在 `plugins/BaiYuTitle/` 下生成 `config.yml`、`database.yml` 与 `lang/`
-4. 默认语言为 `en_US`，中文服请把 `config.yml` 的 `language` 改为 `zh_CN`
+4. 默认语言为 `en_US`，中文环境请把 `config.yml` 的 `language` 改为 `zh_CN`
 
-首次启动会把 `config-version` 从 2 迁移到 3，**升级前请备份 `config.yml`**——迁移会重建文件，
-配置值保留但注释与字段顺序会重排。
+### 注意
+
+1. **升级前请备份 `config.yml`**——迁移可能会重建文件，配置值保留但注释与字段顺序会重排。
 
 ### 命令
 
@@ -82,65 +77,60 @@ AI 承担的是「按约束把设计翻译成代码」。技术选型、边界�
 栏位上限由组决定，在 `config.yml` 的 `groups` 段配置：按顺序取第一个玩家拥有的组权限，权限为空的组作为兜底。
 组权限（例如默认的 `baiyutitle.group.vip`）由配置定义、启动时注册，不在插件清单里写死。
 
-## 构建
-
-### 环境要求
-
-- JDK 21
-- Git（版本号由提交哈希生成）
-- Gradle 由 wrapper 提供，无需单独安装
-
-### 编译
-
-```bash
-./gradlew build
-```
-
-产物在 `paper/build/libs/`。文件名带 `sources` 或 `javadoc` 的不是运行包。
-
-### 测试
-
-```bash
-./gradlew :common:test       # 数据层：H2 与 SQLite 各跑一遍完整迁移
-./gradlew :paper:test        # 表现层纯函数
-./gradlew :paper:runServer   # 起测试服，自动下载 Vault 与 PlaceholderAPI
-```
-
-486 个测试，其中数据层 290 个跑的是真迁移而不是 mock 出来的表结构。
-
-## 项目结构
-
-```
-api       对外事件与接口，不依赖其他模块
-common    领域模型 + 数据访问 + 业务服务，不依赖服务端 API
-paper     服务端实现、命令、菜单、监听器
-buildSrc  构建期插件：数据库方言迁移合并、版本号生成
-```
-
-依赖方向单向：`paper → common → api`。
-
-`common` 不 import 任何 `org.bukkit` 类型，所以领域层的两百多个测试不需要启动服务器即可运行。
-业务对象全部经构造器注入，唯一组合根是 `paper` 模块的 `bootstrap/PluginAssembly`，没有静态单例。
-
-## 给开发者
-
-### 事件
-
-`api` 模块提供 6 个事件，其中 2 个可取消：
-
-| 事件 | 可取消 | 时机 |
-| :--- | :---: | :--- |
-| `TitlePrePurchaseEvent` | 是 | 确认购买后、任何数据写入前 |
-| `TradePreAcceptEvent` | 是 | 目标方同意后、任何数据写入前 |
-| `TitlePurchasedEvent` | 否 | 订单履约授予后 |
-| `TradeCompletedEvent` | 否 | 成交事务提交后 |
-| `TitleGrantEvent` | 否 | 任一授予入口提交后 |
-| `TitleRevokeEvent` | 否 | 回收提交后 |
-
 ### PlaceholderAPI
 
-标识符 `byt`，20 余个变量，包含余额、七类持有数、栏位上限、当前佩戴预览等。
-离线玩家查询时数值类变量降级为 0、文本类返回空。
+标识符 `byt`，需安装 [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/)。
+未安装时插件自身功能不受影响（个人信息模板走同一套解析器）。
+
+#### 单值变量
+
+| 变量 | 返回 | 说明 |
+| :--- | :--- | :--- |
+| `%byt_player_coin%` | 整数 | 称号币余额 |
+| `%byt_player_title_amount%` | 整数 | 有效持有的称号总数 |
+| `%byt_player_title_slots%` | 整数 | 栏位上限，由玩家组决定 |
+| `%byt_player_title_slots_enabled%` | 整数 | 已启用的栏位数 |
+| `%byt_player_title_using%` | 文本 | 当前佩戴的称号，多栏位按分隔符拼接 |
+| `%byt_player_trade_initiated%` | 整数 | 发起过的交易数 |
+| `%byt_player_trade_completed%` | 整数 | 完成的交易数 |
+
+#### 按类型计数
+
+`%byt_player_title_amount_<类型>%`，类型取值：
+
+| 类型 | 统计范围 |
+| :--- | :--- |
+| `free` | 免费称号（条件为空集） |
+| `vault` | 含金币条件的称号 |
+| `coin` | 含称号币条件的称号 |
+| `item` | 含物品条件的称号 |
+| `permission` | 含权限条件的称号 |
+| `group` | 由称号组生成的称号 |
+| `bond` | 羁绊称号 |
+
+一个称号可能同时命中多个类型（例如「金币或物品」两种条件并存），所以这些分类分别计数时，
+**各项之和可以大于 `player_title_amount`**。这不是 bug，是「按条件类型统计」与「按称号统计」的口径差异。
+
+#### 逐栏位展示
+
+`%byt_player_title_using_<n>%`，`n` 从 1 开始。取值分四种情况：
+
+| 情况 | 返回 |
+| :--- | :--- |
+| `n` 超过当前栏位上限 | 空串 |
+| 该栏位已停用 | `已禁用`（语言文件 `papi.slot-disabled`） |
+| 该栏位为随机模式 | `随机(N)`，N 是池内当前有效的称号数（`papi.random`） |
+| 固定称号 | 该称号的展示串；称号已失效时回退默认称号 |
+
+#### 取值规则
+
+- **「有效持有」** 指所有权处于 ACTIVE、未到期、且称号未被软删。同一称号的过期记录不计入。
+- **全部变量只读内存快照**，不触发数据库查询，可以放在计分板、Tab、聊天前缀这类高频位置。
+  代价是数据有轻微延迟，最迟在下次缓存刷新时追平。
+- **玩家离线或档案尚未加载**时：计数类返回 `0`，文本类返回空串。
+- `player_title_using` 是**实时预览**：若某栏位设为随机，每次取值都会从池里重新抽一个，
+  因此连续两次调用结果可能不同。需要稳定展示时用 `using_<n>`（它对随机栏位返回「随机(N)」而不是具体称号）。
+- Chat 前缀与这些变量的渲染同源，改 `prefix-brackets` / `title-separator` 会同时影响两处。
 
 ## 已知限制
 
